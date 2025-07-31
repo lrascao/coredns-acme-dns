@@ -8,10 +8,10 @@ jobs:
   build-binary:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout
+    - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go
+      uses: actions/setup-go@v5
 
     - name: Build with CoreDNS binary
       run: |
