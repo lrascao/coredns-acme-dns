@@ -23,6 +23,7 @@ func TestConfig(t *testing.T) {
 					host ns1.test.domain
 					ip 1.1.1.1
 				}
+				election_proposal "prop1"
 			}`,
 			false,
 			config{
@@ -32,7 +33,8 @@ func TestConfig(t *testing.T) {
 					host: "ns1.test.domain",
 					ip:   "1.1.1.1",
 				},
-				email: "test@test.com",
+				email:            "test@test.com",
+				electionProposal: "proposal1",
 			},
 			"test.domain",
 		},
@@ -46,6 +48,7 @@ func TestConfig(t *testing.T) {
 					host ns1.test.domain
 					ip 1.1.1.1
 				}
+				election_proposal "prop1"
 			}`,
 			false,
 			config{
@@ -55,7 +58,8 @@ func TestConfig(t *testing.T) {
 					host: "ns1.test.domain",
 					ip:   "1.1.1.1",
 				},
-				email: "test@test.com",
+				email:            "test@test.com",
+				electionProposal: "proposal1",
 			},
 			"test.domain",
 		},

@@ -14,6 +14,7 @@ const (
 	AUTHORITATIVE_NAMESERVER         = "authoritative_nameserver"
 	AUTHORITATIVE_NAMESERVER_IP_ADDR = "ip"
 	AUTHORITATIVE_NAMESERVER_HOST    = "host"
+	ELECTION_PROPOSAL                = "election_proposal"
 )
 
 type nameserver struct {
@@ -26,6 +27,7 @@ type config struct {
 	zone                    string
 	authoritativeNameserver nameserver
 	email                   string
+	electionProposal        string
 }
 
 func defaultConfig() config {
@@ -36,7 +38,8 @@ func defaultConfig() config {
 			host: "",
 			ip:   "",
 		},
-		email: "",
+		email:            "",
+		electionProposal: "",
 	}
 }
 
@@ -72,6 +75,12 @@ func parseConfig(c *caddy.Controller) (config, error) {
 					return config{}, c.Errf("expected one argument for %s, got: %#v", EMAIL, args)
 				}
 				cfg.email = args[0]
+			case ELECTION_PROPOSAL:
+				args := c.RemainingArgs()
+				if len(args) != 1 {
+					return config{}, c.Errf("expected one argument for %s, got: %#v", ELECTION_PROPOSAL, args)
+				}
+				cfg.electionProposal = args[0]
 			case AUTHORITATIVE_NAMESERVER:
 				for c.NextBlock() {
 					term := strings.ToLower(c.Val())
@@ -104,6 +113,9 @@ func parseConfig(c *caddy.Controller) (config, error) {
 	}
 	if len(cfg.authoritativeNameserver.host) == 0 && len(cfg.authoritativeNameserver.ip) == 0 {
 		return config{}, c.Errf("Authoritative nameserver details not provided")
+	}
+	if cfg.electionProposal == "" {
+		return config{}, c.Errf("Election proposal not provided")
 	}
 
 	return cfg, nil

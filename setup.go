@@ -8,10 +8,19 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
-	"github.com/coredns/coredns/plugin/pkg/log"
+	clog "github.com/coredns/coredns/plugin/pkg/log"
+
+	coredns_etcd "github.com/lrascao/coredns-etcd"
 )
 
-const pluginName = "acme"
+// Define log to be a logger with the plugin name in it. This way we can just use log.Info and
+// friends to log.
+var log = clog.NewWithPlugin("acme")
+
+const (
+	pluginName   = "acme"
+	electionName = "acme-dns01"
+)
 
 func init() {
 	plugin.Register(pluginName, setup)
@@ -30,34 +39,62 @@ func setup(c *caddy.Controller) error {
 	provider := NewProvider()
 
 	acmeTemplate := issuerFromConfig(provider, cfg)
+	handler := &AcmeHandler{
+		provider: provider,
+		AcmeConfig: &AcmeConfig{
+			Zone: cfg.zone,
+		},
+	}
 
-	config := dnsserver.GetConfig(c)
-	config.AddPlugin(func(next plugin.Handler) plugin.Handler {
-		return AcmeHandler{
-			Next:     next,
-			provider: provider,
-			AcmeConfig: &AcmeConfig{
-				Zone: cfg.zone,
-			},
-		}
+	corednsConfig := dnsserver.GetConfig(c)
+	corednsConfig.AddPlugin(func(next plugin.Handler) plugin.Handler {
+		handler.Next = next
+		return handler
 	})
 
 	c.OnFirstStartup(func() error {
-		if !cfg.enabled {
-			log.Info("ACME plugin is disabled, skipping certificate issuance")
-			return nil
+		var election coredns_etcd.Election
+		// find the plugin that satisfies the election interface
+		for _, p := range dnsserver.GetConfig(c).Handlers() {
+			if e, ok := p.(coredns_etcd.Election); ok {
+				election = e
+				break
+			}
+		}
+		if election == nil {
+			return fmt.Errorf("no election plugin found, ACME requires an election plugin to function")
 		}
 
-		go func() error {
-			certmagicCfg := certmagic.NewDefault()
-			acme := NewACME(acmeTemplate, certmagicCfg, cfg.zone)
-			if err := acme.IssueCert(ctx, []string{cfg.zone}); err != nil {
-				log.Error(err)
-				return fmt.Errorf("failed to issue certificate for zone %s: %w", cfg.zone, err)
-			}
+		go func() {
+			log.Infof("Campaigning on election %s for ACME DNS-01 challenge with proposal %s",
+				electionName, cfg.electionProposal)
 
-			return nil
+			err := election.Campaign(ctx,
+				coredns_etcd.WithElection(electionName),
+				coredns_etcd.WithProposal(cfg.electionProposal),
+				coredns_etcd.WithCallback(
+					func(ctx context.Context) error {
+						log.Infof("Won the election for ACME DNS-01 challenge with proposal %s",
+							cfg.electionProposal)
+						if !cfg.enabled {
+							log.Info("ACME plugin is disabled, skipping certificate issuance")
+							return nil
+						}
+
+						certmagicCfg := certmagic.NewDefault()
+						acme := NewACME(acmeTemplate, certmagicCfg, cfg.zone)
+						if err := acme.IssueCert(ctx, []string{cfg.zone}); err != nil {
+							log.Error(err)
+							return fmt.Errorf("failed to issue certificate for zone %s: %w", cfg.zone, err)
+						}
+
+						return nil
+					}))
+			if err != nil {
+				log.Errorf("Error starting ACME election: %v", err)
+			}
 		}()
+
 		return nil
 	})
 	return nil
