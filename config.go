@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	ENABLED                          = "enabled"
 	DOMAIN                           = "domain"
 	EMAIL                            = "email"
 	AUTHORITATIVE_NAMESERVER         = "authoritative_nameserver"
@@ -21,18 +22,44 @@ type nameserver struct {
 }
 
 type config struct {
+	enabled                 bool
 	zone                    string
 	authoritativeNameserver nameserver
 	email                   string
 }
 
+func defaultConfig() config {
+	return config{
+		enabled: true,
+		zone:    "",
+		authoritativeNameserver: nameserver{
+			host: "",
+			ip:   "",
+		},
+		email: "",
+	}
+}
+
 func parseConfig(c *caddy.Controller) (config, error) {
-	var cfg config
+	cfg := defaultConfig()
 
 	for c.Next() {
 		for c.NextBlock() {
 			term := strings.ToLower(c.Val())
 			switch term {
+			case ENABLED:
+				args := c.RemainingArgs()
+				if len(args) != 1 {
+					return config{}, c.Errf("expected one argument for %s, got: %#v", ENABLED, args)
+				}
+				switch strings.ToLower(args[0]) {
+				case "true":
+					cfg.enabled = true
+				case "false":
+					cfg.enabled = false
+				default:
+					return config{}, c.Errf("expected 'true' or 'false' for %s, got: %s", ENABLED, args[0])
+				}
 			case DOMAIN:
 				args := c.RemainingArgs()
 				if len(args) > 1 {

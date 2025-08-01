@@ -15,7 +15,7 @@ func TestConfig(t *testing.T) {
 		zoneName  string
 	}{
 		{
-			"Correct Config with only DNS challenge",
+			"Correct",
 			`acme {
 				domain test.domain
 				email test@test.com
@@ -26,7 +26,31 @@ func TestConfig(t *testing.T) {
 			}`,
 			false,
 			config{
-				zone: "test.domain",
+				enabled: true,
+				zone:    "test.domain",
+				authoritativeNameserver: nameserver{
+					host: "ns1.test.domain",
+					ip:   "1.1.1.1",
+				},
+				email: "test@test.com",
+			},
+			"test.domain",
+		},
+		{
+			"Correct, disabled",
+			`acme {
+			    enabled false
+				domain test.domain
+				email test@test.com
+				authoritative_nameserver {
+					host ns1.test.domain
+					ip 1.1.1.1
+				}
+			}`,
+			false,
+			config{
+				enabled: false,
+				zone:    "test.domain",
 				authoritativeNameserver: nameserver{
 					host: "ns1.test.domain",
 					ip:   "1.1.1.1",

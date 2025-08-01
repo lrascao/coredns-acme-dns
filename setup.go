@@ -43,6 +43,11 @@ func setup(c *caddy.Controller) error {
 	})
 
 	c.OnFirstStartup(func() error {
+		if !cfg.enabled {
+			log.Info("ACME plugin is disabled, skipping certificate issuance")
+			return nil
+		}
+
 		go func() error {
 			certmagicCfg := certmagic.NewDefault()
 			acme := NewACME(acmeTemplate, certmagicCfg, cfg.zone)
