@@ -6,10 +6,7 @@ require (
 	github.com/caddyserver/certmagic v0.23.0
 	github.com/coredns/caddy v1.1.2-0.20241029205200-8de985351a98
 	github.com/coredns/coredns v1.12.2
-	github.com/google/uuid v1.6.0
-	github.com/libdns/libdns v1.0.0
 	github.com/lrascao/coredns-etcd v0.0.0-20250801161252-77eb079b1f40
-	github.com/miekg/dns v1.1.66
 )
 
 require (
@@ -27,7 +24,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
+	github.com/libdns/libdns v1.0.0 // indirect
 	github.com/mholt/acmez/v3 v3.1.2 // indirect
+	github.com/miekg/dns v1.1.66 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/onsi/ginkgo/v2 v2.22.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect

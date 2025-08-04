@@ -36,22 +36,6 @@ func setup(c *caddy.Controller) error {
 
 	log.Infof("ACME configuration: %+v", cfg)
 
-	provider := NewProvider()
-
-	acmeTemplate := issuerFromConfig(provider, cfg)
-	handler := &AcmeHandler{
-		provider: provider,
-		AcmeConfig: &AcmeConfig{
-			Zone: cfg.zone,
-		},
-	}
-
-	corednsConfig := dnsserver.GetConfig(c)
-	corednsConfig.AddPlugin(func(next plugin.Handler) plugin.Handler {
-		handler.Next = next
-		return handler
-	})
-
 	c.OnFirstStartup(func() error {
 		var election coredns_etcd.Election
 		// find the plugin that satisfies the election interface
@@ -81,6 +65,19 @@ func setup(c *caddy.Controller) error {
 							return nil
 						}
 
+						// find the plugin that satisfies certmagic's DNSProvider interface
+						var provider certmagic.DNSProvider
+						for _, h := range dnsserver.GetConfig(c).Handlers() {
+							if p, ok := h.(certmagic.DNSProvider); ok {
+								provider = p
+								break
+							}
+						}
+						if provider == nil {
+							return fmt.Errorf("no DNSProvider found, ACME requires a DNSProvider to function")
+						}
+
+						acmeTemplate := issuerFromConfig(provider, cfg)
 						certmagicCfg := certmagic.NewDefault()
 						acme := NewACME(acmeTemplate, certmagicCfg, cfg.zone)
 						if err := acme.IssueCert(ctx, []string{cfg.zone}); err != nil {
