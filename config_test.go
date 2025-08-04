@@ -19,11 +19,11 @@ func TestConfig(t *testing.T) {
 			`acme {
 				domain test.domain
 				email test@test.com
+				election_proposal "prop1"
 				authoritative_nameserver {
 					host ns1.test.domain
 					ip 1.1.1.1
 				}
-				election_proposal "prop1"
 			}`,
 			false,
 			config{
@@ -44,11 +44,11 @@ func TestConfig(t *testing.T) {
 			    enabled false
 				domain test.domain
 				email test@test.com
+				election_proposal "prop1"
 				authoritative_nameserver {
 					host ns1.test.domain
 					ip 1.1.1.1
 				}
-				election_proposal "prop1"
 			}`,
 			false,
 			config{
